@@ -2,9 +2,12 @@ import React from 'react';
 import throttle from 'lodash.throttle';
 import autoBind from 'auto-bind';
 import logUpdate from 'log-update';
-import createReconciler from './reconciler';
+import isCI from 'is-ci';
+import signalExit from 'signal-exit';
+import reconciler from './reconciler';
 import createRenderer from './renderer';
 import {createNode} from './dom';
+import instances from './instances';
 import App from './components/App';
 
 export default class Instance {
@@ -14,6 +17,7 @@ export default class Instance {
 		this.options = options;
 
 		this.rootNode = createNode('root');
+		this.rootNode.onRender = this.onRender;
 		this.renderer = createRenderer({
 			terminalWidth: options.stdout.columns
 		});
@@ -25,38 +29,39 @@ export default class Instance {
 		});
 
 		// Ignore last render after unmounting a tree to prevent empty output before exit
-		this.ignoreRender = false;
+		this.isUnmounted = false;
 
 		// Store last output to only rerender when needed
 		this.lastOutput = '';
-		this.lastStaticOutput = '';
 
 		// This variable is used only in debug mode to store full static output
 		// so that it's rerendered every time, not just new static parts, like in non-debug mode
 		this.fullStaticOutput = '';
 
-		this.reconciler = createReconciler(this.onRender);
-		this.container = this.reconciler.createContainer(this.rootNode, false);
+		this.container = reconciler.createContainer(this.rootNode, false, false);
 
-		this.exitPromise = new Promise(resolve => {
+		this.exitPromise = new Promise((resolve, reject) => {
 			this.resolveExitPromise = resolve;
+			this.rejectExitPromise = reject;
 		});
+
+		// Unmount when process exits
+		this.unsubscribeExit = signalExit(this.unmount, {alwaysLast: false});
 	}
 
 	onRender() {
-		if (this.ignoreRender) {
+		if (this.isUnmounted) {
 			return;
 		}
 
 		const {output, staticOutput} = this.renderer(this.rootNode);
 
 		// If <Static> output isn't empty, it means new children have been added to it
-		const hasNewStaticOutput = staticOutput && staticOutput !== '\n' && staticOutput !== this.lastStaticOutput;
+		const hasStaticOutput = staticOutput && staticOutput !== '\n';
 
 		if (this.options.debug) {
-			if (hasNewStaticOutput) {
+			if (hasStaticOutput) {
 				this.fullStaticOutput += staticOutput;
-				this.lastStaticOutput = staticOutput;
 			}
 
 			this.options.stdout.write(this.fullStaticOutput + output);
@@ -64,16 +69,22 @@ export default class Instance {
 		}
 
 		// To ensure static output is cleanly rendered before main output, clear main output first
-		if (hasNewStaticOutput) {
-			this.log.clear();
-			this.options.stdout.write(staticOutput);
-			this.log(output);
+		if (hasStaticOutput) {
+			if (!isCI) {
+				this.log.clear();
+			}
 
-			this.lastStaticOutput = staticOutput;
+			this.options.stdout.write(staticOutput);
+
+			if (!isCI) {
+				this.log(output);
+			}
 		}
 
 		if (output !== this.lastOutput) {
-			this.throttledLog(output);
+			if (!isCI) {
+				this.throttledLog(output);
+			}
 
 			this.lastOutput = output;
 		}
@@ -91,15 +102,34 @@ export default class Instance {
 			</App>
 		);
 
-		this.reconciler.updateContainer(tree, this.container);
+		reconciler.updateContainer(tree, this.container);
 	}
 
-	unmount() {
+	unmount(error) {
+		if (this.isUnmounted) {
+			return;
+		}
+
 		this.onRender();
-		this.log.done();
-		this.ignoreRender = true;
-		this.reconciler.updateContainer(null, this.container);
-		this.resolveExitPromise();
+		this.unsubscribeExit();
+
+		// CIs don't handle erasing ansi escapes well, so it's better to
+		// only render last frame of non-static output
+		if (isCI) {
+			this.options.stdout.write(this.lastOutput + '\n');
+		} else if (!this.options.debug) {
+			this.log.done();
+		}
+
+		this.isUnmounted = true;
+		reconciler.updateContainer(null, this.container);
+		instances.delete(this.options.stdout);
+
+		if (error instanceof Error) {
+			this.rejectExitPromise(error);
+		} else {
+			this.resolveExitPromise();
+		}
 	}
 
 	waitUntilExit() {

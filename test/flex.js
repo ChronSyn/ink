@@ -1,7 +1,7 @@
 import React from 'react';
 import test from 'ava';
-import {Box} from '..';
 import renderToString from './helpers/render-to-string';
+import {Box} from '..';
 
 test('grow equally', t => {
 	const output = renderToString(
@@ -55,4 +55,60 @@ test('shrink equally', t => {
 	);
 
 	t.is(output, 'A    B   C');
+});
+
+test('set flex basis with flexDirection="row" container', t => {
+	const output = renderToString(
+		<Box width={6}>
+			<Box flexBasis={3}>
+				A
+			</Box>
+
+			B
+		</Box>
+	);
+
+	t.is(output, 'A  B');
+});
+
+test('set flex basis in percent with flexDirection="row" container', t => {
+	const output = renderToString(
+		<Box width={6}>
+			<Box flexBasis="50%">
+				A
+			</Box>
+
+			B
+		</Box>
+	);
+
+	t.is(output, 'A  B');
+});
+
+test('set flex basis with flexDirection="column" container', t => {
+	const output = renderToString(
+		<Box height={6} flexDirection="column">
+			<Box flexBasis={3}>
+				A
+			</Box>
+
+			B
+		</Box>
+	);
+
+	t.is(output, 'A\n\n\nB\n\n');
+});
+
+test('set flex basis in percent with flexDirection="column" container', t => {
+	const output = renderToString(
+		<Box height={6} flexDirection="column">
+			<Box flexBasis="50%">
+				A
+			</Box>
+
+			B
+		</Box>
+	);
+
+	t.is(output, 'A\n\n\nB\n\n');
 });

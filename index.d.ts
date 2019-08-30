@@ -39,7 +39,7 @@ export type Instance = {
 	/**
 	 * Returns a promise, which resolves when app is unmounted.
 	 */
-	waitUntilExit: Promise<void>;
+	waitUntilExit: () => Promise<void>;
 };
 
 export type Unmount = () => void;
@@ -120,8 +120,10 @@ export interface ColorProps {
 export const Color: React.FC<ColorProps>;
 
 export interface BoxProps {
-	readonly width?: number;
-	readonly height?: number;
+	readonly width?: number | string;
+	readonly height?: number | string;
+	readonly minWidth?: number;
+	readonly minHeight?: number;
 	readonly paddingTop?: number;
 	readonly paddingBottom?: number;
 	readonly paddingLeft?: number;
@@ -139,6 +141,7 @@ export interface BoxProps {
 	readonly flexGrow?: number;
 	readonly flexShrink?: number;
 	readonly flexDirection?: "row" | "row-reverse" | "column" | "column-reverse";
+	readonly flexBasis?: string | number;
 	readonly alignItems?: "flex-start" | "center" | "flex-end";
 	readonly justifyContent?:
 		| "flex-start"
@@ -146,6 +149,12 @@ export interface BoxProps {
 		| "flex-end"
 		| "space-between"
 		| "space-around";
+	readonly textWrap?:
+		| "wrap"
+		| "truncate"
+		| "truncate-start"
+		| "truncate-middle"
+		| "truncate-end";
 }
 
 /**
@@ -179,7 +188,7 @@ export const AppContext: React.Context<{
 	/**
 	 * Exit (unmount) the whole Ink app.
 	 */
-	readonly exit: () => void;
+	readonly exit: (error?: Error) => void;
 }>;
 
 /**
@@ -190,8 +199,15 @@ export const StdinContext: React.Context<{
 	 * Stdin stream passed to `render()` in `options.stdin` or `process.stdin` by default. Useful if your app needs to handle user input.
 	 */
 	readonly stdin: NodeJS.ReadStream;
+
+	/**
+	 * A boolean flag determining if the current `stdin` supports `setRawMode`. A component using `setRawMode` might want to use `isRawModeSupported` to nicely fall back in environments where raw mode is not supported.
+	 */
+	readonly isRawModeSupported: boolean;
+
 	/**
 	 * Ink exposes this function via own `<StdinContext>` to be able to handle Ctrl+C, that's why you should use Ink's `setRawMode` instead of `process.stdin.setRawMode`.
+	 * If the `stdin` stream passed to Ink does not support setRawMode, this function does nothing.
 	 */
 	readonly setRawMode: NodeJS.ReadStream["setRawMode"];
 }>;

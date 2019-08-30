@@ -23,12 +23,21 @@ export default class Output {
 	}
 
 	write(x, y, text, {transformers}) {
+		if (!text) {
+			return;
+		}
+
 		const lines = text.split('\n');
 		let offsetY = 0;
 
 		for (let line of lines) {
 			const length = stringLength(line);
 			const currentLine = this.output[y + offsetY];
+
+			// Line can be missing if `text` is taller than height of pre-initialized `this.output`
+			if (!currentLine) {
+				continue;
+			}
 
 			for (const transformer of transformers) {
 				line = transformer(line);

@@ -1,6 +1,5 @@
 import Instance from './instance';
-
-const instances = new WeakMap();
+import instances from './instances';
 
 export default (node, options = {}) => {
 	// Stream was passed instead of `options` object
@@ -31,7 +30,7 @@ export default (node, options = {}) => {
 
 	return {
 		rerender: instance.render,
-		unmount: instance.unmount,
+		unmount: () => instance.unmount(),
 		waitUntilExit: instance.waitUntilExit,
 		cleanup: () => instances.delete(options.stdout)
 	};

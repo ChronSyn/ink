@@ -70,6 +70,12 @@ Feel free to play around with the code and fork this repl at [https://repl.it/@v
 - [emma](https://github.com/maticzav/emma-cli) - Terminal assistant to find and install npm packages.
 - [swiff](https://github.com/simple-integrated-marketing/swiff) - Multi-environment command line tools for time-saving web developers.
 - [changelog-view](https://github.com/jdeniau/changelog-view) - Tool view changelog in console.
+- [gomoku-terminal](https://github.com/acrazing/gomoku-terminal) - Play online Gomoku in the terminal.
+- [cfpush](https://github.com/mamachanko/cfpush) - An interactive Cloud Foundry tutorial in your terminal.
+- [startd](https://github.com/mgrip/startd) - Turn your React component into a web app from the command-line.
+- [sindresorhus](https://github.com/sindresorhus/sindresorhus) - The Sindre Sorhus CLI.
+- [tap](https://node-tap.org) - A Test-Anything-Protocol library for JavaScript.
+- [gatsby-cli](https://www.gatsbyjs.org) - Gatsby is a modern web framework for blazing fast websites.
 
 
 ## Contents
@@ -89,13 +95,21 @@ Ink's goal is to provide the same component-based UI building experience that Re
 
 The key difference you have to remember is that the rendering result isn't a DOM, but a string, which Ink writes to the output.
 
-To ensure all examples work and you can begin your adventure with Ink, make sure to set up Babel with a React preset. After [installing Babel](https://babeljs.io/docs/en/usage), configure it in `package.json`:
+To get started with Ink quickly, use [create-ink-app](https://github.com/vadimdemedes/create-ink-app) to quickly scaffold a new Ink-based CLI. Alternatively, here's how to configure Babel to work with Ink. To ensure all examples work and you can begin your adventure, make sure to set up Babel with a React preset. After [installing Babel](https://babeljs.io/docs/en/usage), configure it in `package.json`:
 
 ```json
 {
 	"babel": {
 		"presets": [
-			"@babel/preset-react"
+			"@babel/preset-react",
+			[
+				"@babel/preset-env",
+				{
+					"targets": {
+						"node": true
+					}
+				}
+			]
 		]
 	}
 }
@@ -121,6 +135,7 @@ render(<Demo/>);
 
 - [Jest](examples/jest/jest.js) - Implementation of basic Jest UI [(live demo)](https://ink-jest-demo.vadimdemedes.repl.run/).
 - [Counter](examples/counter/counter.js) - Simple counter that increments every 100ms [(live demo)](https://ink-counter-demo.vadimdemedes.repl.run/).
+- [Form with Validation](https://github.com/final-form/rff-cli-example) - Using framework agnostic form library, [🏁 Final Form](https://github.com/final-form/final-form#-final-form) to manage input state.
 
 
 ## API
@@ -279,6 +294,80 @@ Import:
 import {Box} from 'ink';
 ```
 
+##### Dimensions
+
+###### width
+
+Type: `number`, `string`
+
+Width of the element in spaces. You can also set it in percent, which will calculate the width based on the width of parent element.
+
+```jsx
+<Box width={4}>X</Box> //=> 'X   '
+```
+
+```jsx
+<Box width={10}>
+	<Box width="50%">X</Box>
+	Y
+</Box> //=> 'X    Y'
+```
+
+###### height
+
+Type: `number`, `string`
+
+Height of the element in lines (rows). You can also set it in percent, which will calculate the height based on the height of parent element.
+
+```jsx
+<Box height={4}>X</Box> //=> 'X\n\n\n'
+```
+
+```jsx
+<Box height={6} flexDirection="column">
+	<Box height="50%">X</Box>
+	Y
+</Box> //=> 'X\n\n\nY\n\n'
+```
+
+###### minWidth
+
+Type: `number`
+
+Sets a minimum width of the element. Percentages aren't supported yet, see https://github.com/facebook/yoga/issues/872.
+
+###### minHeight
+
+Type: `number`
+
+Sets a minimum height of the element. Percentages aren't supported yet, see https://github.com/facebook/yoga/issues/872.
+
+##### Wrapping
+
+###### textWrap
+
+Type: `string`<br>
+Values: `wrap` `truncate` `truncate-start` `truncate-middle` `truncate-end`
+
+This property tells Ink to wrap or truncate text content of `<Box>` if its width is larger than container. If `wrap` is passed, Ink will wrap text and split it into multiple lines. If `truncate-*` is passed, Ink will truncate text instead, which will result in one line of text with the rest cut off.
+
+*Note:* Ink doesn't wrap text by default.
+
+```jsx
+<Box textWrap="wrap">Hello World</Box>
+//=> 'Hello\nWorld'
+
+// `truncate` is an alias to `truncate-end`
+<Box textWrap="truncate">Hello World</Box>
+//=> 'Hello…'
+
+<Box textWrap="truncate-middle">Hello World</Box>
+//=> 'He…ld'
+
+<Box textWrap="truncate-start">Hello World</Box>
+//=> '…World'
+```
+
 ##### Padding
 
 ###### paddingTop
@@ -409,6 +498,26 @@ See [flex-shrink](https://css-tricks.com/almanac/properties/f/flex-shrink/).
 </Box>
 ```
 
+###### flexBasis
+
+Type: `number`, `string`<br>
+
+See [flex-basis](https://css-tricks.com/almanac/properties/f/flex-basis/).
+
+```jsx
+<Box width={6}>
+	<Box flexBasis={3}>X</Box>
+	Y
+</Box> //=> 'X  Y'
+```
+
+```jsx
+<Box width={6}>
+	<Box flexBasis="50%">X</Box>
+	Y
+</Box> //=> 'X  Y'
+```
+
 ###### flexDirection
 
 Type: `string`<br>
@@ -516,7 +625,7 @@ See [justify-content](https://css-tricks.com/almanac/properties/f/justify-conten
 
 #### `<Color>`
 
-The `<Color>` compoment is a simple wrapper around [the `chalk` API](https://github.com/chalk/chalk#api).
+The `<Color>` component is a simple wrapper around [the `chalk` API](https://github.com/chalk/chalk#api).
 It supports all of the chalk's methods as `props`.
 
 Import:
@@ -593,7 +702,7 @@ Example use case for this component is Jest's output:
 
 ![](https://jestjs.io/img/content/feature-fast.png)
 
-Jest continuosuly writes the list of completed tests to the output, while updating test results at the bottom of the output in real-time. Here's how this user interface could be implemented with Ink:
+Jest continuously writes the list of completed tests to the output, while updating test results at the bottom of the output in real-time. Here's how this user interface could be implemented with Ink:
 
 ```jsx
 <>
@@ -638,6 +747,8 @@ Usage:
 </AppContext.Consumer>
 ```
 
+If `exit` is called with an Error, `waitUntilExit` will reject with that error.
+
 #### `<StdinContext>`
 
 `<StdinContext>` is a [React context](https://reactjs.org/docs/context.html#reactcreatecontext), which exposes input stream.
@@ -666,12 +777,31 @@ Usage:
 </StdinContext.Consumer>
 ```
 
+##### isRawModeSupported
+
+Type: `boolean`
+
+A boolean flag determining if the current `stdin` supports `setRawMode`.
+A component using `setRawMode` might want to use `isRawModeSupported` to nicely fall back in environments where raw mode is not supported.
+
+Usage:
+
+```jsx
+<StdinContext.Consumer>
+	{({ isRawModeSupported, setRawMode, stdin }) => (
+		isRawModeSupported ? <MyInputComponent setRawMode={setRawMode} stdin={stdin}/> : <MyComponentThatDoesntUseInput />
+	)}
+</StdinContext.Consumer>
+```
+
 ##### setRawMode
 
 Type: `function`<br>
 
 See [`setRawMode`](https://nodejs.org/api/tty.html#tty_readstream_setrawmode_mode).
 Ink exposes this function via own `<StdinContext>` to be able to handle <kbd>Ctrl</kbd>+<kbd>C</kbd>, that's why you should use Ink's `setRawMode` instead of `process.stdin.setRawMode`. Ink also enables `keypress` events via [`readline.emitKeypressEvents()`](https://nodejs.org/api/readline.html#readline_readline_emitkeypressevents_stream_interface) when raw mode is enabled.
+
+**Warning:** This function will throw unless the current `stdin` supports `setRawMode`. Use [`isRawModeSupported`](#israwmodesupported) to detect `setRawMode` support.
 
 Usage:
 
@@ -720,25 +850,27 @@ Usage:
 - [ink-big-text](https://github.com/sindresorhus/ink-big-text) - Awesome text component.
 - [ink-image](https://github.com/kevva/ink-image) - Display images inside the terminal.
 - [ink-tab](https://github.com/jdeniau/ink-tab) - Tab component.
+- [ink-color-pipe](https://github.com/LitoMore/ink-color-pipe) - Create color text with simpler style strings in Ink.
+- [ink-multi-select](https://github.com/karaggeorge/ink-multi-select) - Select one or more values from a list
+- [ink-divider](https://github.com/JureSotosek/ink-divider) - A divider component.
+- [ink-progress-bar](https://github.com/brigand/ink-progress-bar) - Configurable component for rendering progress bars.
+- [ink-table](https://github.com/maticzav/ink-table) - Table component.
 
 ### Incompatible components
 
 These are components that haven't migrated to Ink 2 yet:
 
-- [ink-progress-bar](https://github.com/brigand/ink-progress-bar) - Configurable component for rendering progress bars.
 - [ink-console](https://github.com/ForbesLindesay/ink-console) - Render output from `console[method]` calls in a scrollable panel.
 - [ink-confirm-input](https://github.com/kevva/ink-confirm-input) - Yes/No confirmation input.
 - [ink-checkbox-list](https://github.com/MaxMEllon/ink-checkbox-list) - Checkbox.
 - [ink-quicksearch](https://github.com/aicioara/ink-quicksearch) - Select Component with fast quicksearch-like navigation
 - [ink-autocomplete](https://github.com/maticzav/ink-autocomplete) - Autocomplete.
-- [ink-table](https://github.com/maticzav/ink-table) - Table component.
 - [ink-broadcast](https://github.com/jimmed/ink-broadcast) - Implementation of react-broadcast for Ink.
 - [ink-router](https://github.com/jimmed/ink-router) - Implementation of react-router for Ink.
 - [ink-select](https://github.com/karaggeorge/ink-select) - Select component.
 - [ink-scrollbar](https://github.com/karaggeorge/ink-scrollbar) - Scrollbar component.
 - [ink-text-animation](https://github.com/yardnsm/ink-text-animation) - Text animation component.
 - [ink-figlet](https://github.com/KimotoYanke/ink-figlet) - Large text component with Figlet fonts.
-- [ink-divider](https://github.com/JureSotosek/ink-divider) - A divider component.
 
 
 ## Testing
